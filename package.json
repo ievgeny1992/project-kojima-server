@@ -11,7 +11,9 @@
     "mongoose": "^5.13.14",
     "nodemon": "^2.0.19"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "moment": "^2.29.4"
+  },
   "scripts": {
     "dev": "nodemon app.js"
   },
