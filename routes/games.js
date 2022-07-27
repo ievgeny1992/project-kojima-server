@@ -45,10 +45,10 @@ router.get('/genres', async (req, res) => {
   }
 });
 
-//Get all years
+//Get items for timeline
 router.get('/timeline', async (req, res) => {
   try {
-    const years = await Game.aggregate([
+    const timeline = await Game.aggregate([
       {
         $group: {
           _id: {
@@ -72,7 +72,7 @@ router.get('/timeline', async (req, res) => {
       },
       { $sort: { _id: -1 } },
     ]);
-    res.status(200).json(years);
+    res.status(200).json(timeline);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
