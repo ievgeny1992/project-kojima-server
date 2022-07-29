@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 //Get 12 last games
 router.get('/last', async (req, res) => {
   try {
-    const games = await Game.find().sort({ _id: -1 }).limit(12);
+    const games = await Game.find().sort({ addedDate: -1 }).limit(12);
     res.status(200).json(games);
   } catch (err) {
     res.status(500).json({ message: err.message });
