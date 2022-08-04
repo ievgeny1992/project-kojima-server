@@ -8,7 +8,10 @@ const Game = mongoose.model('Game');
 //Get all games
 router.get('/', async (req, res) => {
   try {
-    const games = await Game.find().sort({ name: 1, releasedDate: 1 });
+    const games = await Game.aggregate([
+      { $project: { name: 1, slug: 1, userRating: 1, coverCrop: 1 } },
+      { $sort: { name: 1, releasedDate: 1 } },
+    ]);
     res.status(200).json(games);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -49,6 +52,7 @@ router.get('/genres', async (req, res) => {
 router.get('/timeline', async (req, res) => {
   try {
     const timeline = await Game.aggregate([
+      { $project: { name: 1, slug: 1, coverCrop: 1, addedDate: 1 } },
       {
         $group: {
           _id: {
@@ -115,6 +119,7 @@ router.get('/complete-games', async (req, res) => {
   }
 });
 
+//Get game
 router.get('/game/:slug', async (req, res) => {
   const slug = req.params.slug;
   try {
