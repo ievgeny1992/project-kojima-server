@@ -38,10 +38,57 @@ router.get('/count', async (req, res) => {
   }
 });
 
-//Get all genres
+// //Get all genres
+// router.get('/genres', async (req, res) => {
+//   try {
+//     const genres = await Game.distinct('genres.name');
+//     res.status(200).json(genres);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
+//Get all genres v2
 router.get('/genres', async (req, res) => {
   try {
-    const genres = await Game.distinct('genres.name');
+    const genres = await Game.aggregate([
+      {
+        $project: {
+          genres: 1,
+        },
+      },
+      {
+        $unwind: '$genres',
+      },
+      {
+        $group: {
+          _id: null,
+          genresCount: { $sum: 1 },
+          genres: {
+            $push: '$genres',
+          },
+        },
+      },
+      {
+        $unwind: '$genres',
+      },
+      {
+        $group: {
+          _id: '$genres.name',
+          total: { $first: '$genresCount' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          percent: {
+            $multiply: [{ $divide: ['$count', '$total'] }, 100],
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
     res.status(200).json(genres);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -52,7 +99,9 @@ router.get('/genres', async (req, res) => {
 router.get('/timeline', async (req, res) => {
   try {
     const timeline = await Game.aggregate([
-      { $project: { name: 1, slug: 1, coverCrop: 1, addedDate: 1 } },
+      {
+        $project: { name: 1, slug: 1, coverCrop: 1, addedDate: 1 },
+      },
       {
         $group: {
           _id: {
@@ -65,7 +114,9 @@ router.get('/timeline', async (req, res) => {
           },
         },
       },
-      { $sort: { _id: -1 } },
+      {
+        $sort: { _id: -1 },
+      },
       {
         $group: {
           _id: '$_id.year',
@@ -77,31 +128,6 @@ router.get('/timeline', async (req, res) => {
       { $sort: { _id: -1 } },
     ]);
     res.status(200).json(timeline);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-//Get genres count
-router.get('/genres-count', async (req, res) => {
-  let genresCount = 0;
-  try {
-    const genres = await Game.aggregate([
-      { $project: { genres: 1 } },
-      { $unwind: '$genres' },
-    ]);
-    res.status(200).json(genres.length);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-//Get games count to genre
-router.get('/genres-count/:genre', async (req, res) => {
-  const genre = req.params.genre;
-  try {
-    const count = await Game.find({ 'genres.name': genre }).countDocuments();
-    res.status(200).json(count);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
