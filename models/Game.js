@@ -48,6 +48,7 @@ const gameSchema = new mongoose.Schema({
   },
   platforms: {},
   genres: {},
+  screenshots: {},
 });
 
 mongoose.model('Game', gameSchema);
