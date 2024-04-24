@@ -7,12 +7,12 @@
     "axios": "^0.27.2",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
-    "express": "^4.18.1",
-    "mongoose": "^5.13.14",
-    "nodemon": "^2.0.19"
+    "express": "^4.19.2",
+    "mongoose": "^5.13.22",
+    "nodemon": "^2.0.22"
   },
   "devDependencies": {
-    "moment": "^2.29.4"
+    "moment": "^2.30.1"
   },
   "scripts": {
     "dev": "nodemon app.js"
