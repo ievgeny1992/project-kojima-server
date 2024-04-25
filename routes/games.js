@@ -77,7 +77,7 @@ router.get('/genres', async (req, res) => {
           },
         },
       },
-      { $sort: { _id: 1 } },
+      { $sort: { percent: -1 } },
     ]);
     res.status(200).json(genres);
   } catch (err) {
