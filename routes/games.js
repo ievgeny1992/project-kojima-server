@@ -84,6 +84,20 @@ router.get('/genres', async (req, res) => {
   }
 });
 
+//Get random game by genre
+router.get('/genre/:genre', async (req, res) => {
+  const genre = req.params.genre;
+  try {
+    const games = await Game.aggregate([
+      { $project: { genres: 1, coverCrop: 1 } },
+      { $match: { 'genres.name': genre } },
+    ]).sample(1);
+    res.status(200).json(games);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 //Get items for timeline
 router.get('/timeline', async (req, res) => {
   try {
