@@ -46,6 +46,11 @@ const gameSchema = new mongoose.Schema({
     type: Boolean,
     required: false,
   },
+  status: {
+    type: String,
+    enum: ['playing', 'completed', 'dropped', 'wishlist'],
+    default: 'playing',
+  },
   platforms: {},
   genres: {},
   screenshots: {},
