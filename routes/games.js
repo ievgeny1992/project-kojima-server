@@ -9,6 +9,11 @@ router.get('/', async (req, res) => {
   try {
     const games = await Game.aggregate([
       {
+        $match: {
+          status: { $ne: 'wishlist' },
+        },
+      },
+      {
         $project: {
           name: 1,
           slug: 1,
@@ -39,7 +44,7 @@ router.get('/last', async (req, res) => {
 //Get all games count
 router.get('/count', async (req, res) => {
   try {
-    const games = await Game.find().countDocuments();
+    const games = await Game.countDocuments({ status: { $ne: 'wishlist' } });
     res.status(200).json(games);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -50,6 +55,11 @@ router.get('/count', async (req, res) => {
 router.get('/genres', async (req, res) => {
   try {
     const genres = await Game.aggregate([
+      {
+        $match: {
+          status: { $ne: 'wishlist' },
+        },
+      },
       {
         $project: {
           genres: 1,
@@ -98,6 +108,11 @@ router.get('/genre/:genre', async (req, res) => {
   const genre = req.params.genre;
   try {
     const games = await Game.aggregate([
+      {
+        $match: {
+          status: { $ne: 'wishlist' },
+        },
+      },
       { $project: { genres: 1, coverCrop: 1 } },
       { $match: { 'genres.name': genre } },
     ]).sample(1);
@@ -165,9 +180,9 @@ router.get('/wishlist', async (req, res) => {
 //Get all complete games count
 router.get('/complete-games', async (req, res) => {
   try {
-    const completeGamesCount = await Game.find({
-      completeFlag: true,
-    }).countDocuments();
+    const completeGamesCount = await Game.countDocuments({
+      status: 'completed',
+    });
     res.status(200).json(completeGamesCount);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -209,6 +224,20 @@ router.post('/', async (req, res) => {
   try {
     const newGame = await game.save();
     res.status(201).json(newGame);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+//Edit game
+router.patch('/game/:id', async (req, res) => {
+  const id = req.params.id;
+  const updates = req.body;
+  try {
+    const updatedGame = await Game.findByIdAndUpdate(id, updates, {
+      new: true,
+    });
+    res.status(200).json(updatedGame);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
