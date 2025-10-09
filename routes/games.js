@@ -8,7 +8,16 @@ const Game = mongoose.model('Game');
 router.get('/', async (req, res) => {
   try {
     const games = await Game.aggregate([
-      { $project: { name: 1, slug: 1, userRating: 1, coverCrop: 1 } },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          userRating: 1,
+          coverCrop: 1,
+          status: 1,
+          releasedDate: 1,
+        },
+      },
       { $sort: { name: 1, releasedDate: 1 } },
     ]);
     res.status(200).json(games);
@@ -98,10 +107,15 @@ router.get('/genre/:genre', async (req, res) => {
   }
 });
 
-//Get items for timeline
+//Get games for timeline
 router.get('/timeline', async (req, res) => {
   try {
     const timeline = await Game.aggregate([
+      {
+        $match: {
+          status: { $ne: 'wishlist' },
+        },
+      },
       {
         $project: { name: 1, slug: 1, coverCrop: 1, addedDate: 1 },
       },
@@ -136,6 +150,18 @@ router.get('/timeline', async (req, res) => {
   }
 });
 
+//Get games for wishlist
+router.get('/wishlist', async (req, res) => {
+  try {
+    const wishlistGames = await Game.find({
+      status: 'wishlist',
+    }).sort({ addedDate: -1 });
+    res.status(200).json(wishlistGames);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 //Get all complete games count
 router.get('/complete-games', async (req, res) => {
   try {
@@ -154,6 +180,24 @@ router.get('/game/:slug', async (req, res) => {
   try {
     const game = await Game.findOne({ slug: slug });
     res.status(200).json(game);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get('/year/:year', async (req, res) => {
+  try {
+    const year = req.params.year;
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31);
+
+    const records = await Game.find({
+      addedDate: {
+        $gte: startOfYear,
+        $lte: endOfYear,
+      },
+    });
+    res.status(200).json(records);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
