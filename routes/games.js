@@ -244,10 +244,10 @@ router.patch('/game/:id', async (req, res) => {
 });
 
 //Delete game
-router.delete('/game/:id', async (req, res) => {
-  const id = req.params.id;
+router.delete('/game/:slug', async (req, res) => {
+  const slug = req.params.slug;
   try {
-    res.status(200).json(await Game.deleteOne({ _id: id }));
+    res.status(200).json(await Game.deleteOne({ slug: slug }));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
