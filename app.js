@@ -1,23 +1,17 @@
 require('dotenv').config();
 const express = require('express');
-const app = express();
 const cors = require('cors');
-
-const mongoose = require('mongoose');
 
 require('./modules/game/game.model');
 
-//Connected to DB
-mongoose.connect(process.env.DATABASE_URL);
-const db = mongoose.connection;
-db.on('error', (error) => console.error(error));
-db.once('open', () => console.log('🔗Connected to DB!'));
+const app = express();
 
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-const router = require('./modules/game/game.routes');
-app.use('/games', router);
+// Routes
+const gameRouter = require('./modules/game/game.routes');
+app.use('/games', gameRouter);
 
-//Server started
-app.listen(3000, () => console.log('🚀Server started!'));
+module.exports = app;
