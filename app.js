@@ -5,7 +5,7 @@ const cors = require('cors');
 
 const mongoose = require('mongoose');
 
-require('./models/Game');
+require('./modules/game/game.model');
 
 //Connected to DB
 mongoose.connect(process.env.DATABASE_URL);
@@ -16,7 +16,7 @@ db.once('open', () => console.log('🔗Connected to DB!'));
 app.use(express.json());
 app.use(cors());
 
-const router = require('./routes/games');
+const router = require('./modules/game/game.routes');
 app.use('/games', router);
 
 //Server started
