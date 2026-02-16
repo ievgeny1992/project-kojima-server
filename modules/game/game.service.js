@@ -1,9 +1,11 @@
 const Game = require('./game.model');
 
+const NOT_WISHLIST = { status: { $ne: 'wishlist' } };
+
 class GameService {
   static async getAllGames() {
     return Game.aggregate([
-      { $match: { status: { $ne: 'wishlist' } } },
+      { $match: NOT_WISHLIST },
       {
         $project: {
           name: 1,
@@ -19,37 +21,42 @@ class GameService {
   }
 
   static async getLastGames(limit = 12) {
-    return Game.find().sort({ addedDate: -1 }).limit(limit);
+    return Game.find()
+      .select('name slug coverCrop addedDate status')
+      .sort({ addedDate: -1 })
+      .limit(limit)
+      .lean();
   }
 
   static async getGamesCount() {
-    return Game.countDocuments({ status: { $ne: 'wishlist' } });
+    return Game.countDocuments(NOT_WISHLIST);
   }
 
   static async getGenres() {
     return Game.aggregate([
-      { $match: { status: { $ne: 'wishlist' } } },
-      { $project: { genres: 1 } },
+      { $match: NOT_WISHLIST },
       { $unwind: '$genres' },
       {
         $group: {
           _id: null,
-          genresCount: { $sum: 1 },
-          genres: { $push: '$genres' },
+          total: { $sum: 1 },
+          genres: { $push: '$genres.name' },
         },
       },
       { $unwind: '$genres' },
       {
         $group: {
-          _id: '$genres.name',
-          total: { $first: '$genresCount' },
+          _id: '$genres',
           count: { $sum: 1 },
+          total: { $first: '$total' },
         },
       },
       {
         $project: {
           _id: 1,
-          percent: { $multiply: [{ $divide: ['$count', '$total'] }, 100] },
+          percent: {
+            $multiply: [{ $divide: ['$count', '$total'] }, 100],
+          },
         },
       },
       { $sort: { percent: -1 } },
@@ -58,16 +65,33 @@ class GameService {
 
   static async getRandomGameByGenre(genre) {
     return Game.aggregate([
-      { $match: { status: { $ne: 'wishlist' } } },
-      { $project: { genres: 1, coverCrop: 1 } },
-      { $match: { 'genres.name': genre } },
-    ]).sample(1);
+      {
+        $match: {
+          ...NOT_WISHLIST,
+          'genres.name': genre,
+        },
+      },
+      { $sample: { size: 1 } },
+      {
+        $project: {
+          genres: 1,
+          coverCrop: 1,
+        },
+      },
+    ]);
   }
 
   static async getTimeline() {
     return Game.aggregate([
-      { $match: { status: { $ne: 'wishlist' } } },
-      { $project: { name: 1, slug: 1, coverCrop: 1, addedDate: 1 } },
+      { $match: NOT_WISHLIST },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          coverCrop: 1,
+          addedDate: 1,
+        },
+      },
       {
         $group: {
           _id: {
@@ -78,7 +102,7 @@ class GameService {
           games: { $push: '$$ROOT' },
         },
       },
-      { $sort: { _id: -1 } },
+      { $sort: { '_id.year': -1, '_id.month': -1, '_id.day': -1 } },
       {
         $group: {
           _id: '$_id.year',
@@ -90,7 +114,10 @@ class GameService {
   }
 
   static async getWishlistGames() {
-    return Game.find({ status: 'wishlist' }).sort({ addedDate: -1 });
+    return Game.find({ status: 'wishlist' })
+      .select('name slug coverCrop addedDate')
+      .sort({ addedDate: -1 })
+      .lean();
   }
 
   static async getCompleteGamesCount() {
@@ -98,26 +125,68 @@ class GameService {
   }
 
   static async getGameBySlug(slug) {
-    return Game.findOne({ slug });
+    const game = await Game.findOne({ slug }).lean();
+
+    if (!game) {
+      const error = new Error('Game not found');
+      error.status = 404;
+      throw error;
+    }
+
+    return game;
   }
 
   static async getGamesByYear(year) {
     const startOfYear = new Date(year, 0, 1);
-    const endOfYear = new Date(year, 11, 31);
-    return Game.find({ addedDate: { $gte: startOfYear, $lte: endOfYear } });
+    const endOfYear = new Date(Number(year) + 1, 0, 1);
+
+    return Game.find({
+      addedDate: {
+        $gte: startOfYear,
+        $lt: endOfYear,
+      },
+    })
+      .select('name slug coverCrop addedDate')
+      .lean();
   }
 
   static async addGame(data) {
-    const game = new Game(data);
-    return game.save();
+    const exists = await Game.findOne({ slug: data.slug });
+
+    if (exists) {
+      const error = new Error('Game already exists');
+      error.status = 400;
+      throw error;
+    }
+
+    return Game.create(data);
   }
 
   static async updateGame(id, updates) {
-    return Game.findByIdAndUpdate(id, updates, { new: true });
+    const updatedGame = await Game.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedGame) {
+      const error = new Error('Game not found');
+      error.status = 404;
+      throw error;
+    }
+
+    return updatedGame;
   }
 
   static async deleteGameBySlug(slug) {
-    return Game.deleteOne({ slug });
+    const result = await Game.deleteOne({ slug });
+
+    if (result.deletedCount === 0) {
+      const error = new Error('Game not found');
+      error.status = 404;
+      throw error;
+    }
+
+    return result;
   }
 }
 
