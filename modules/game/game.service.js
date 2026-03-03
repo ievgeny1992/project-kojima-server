@@ -115,7 +115,7 @@ class GameService {
 
   static async getWishlistGames() {
     return Game.find({ status: 'wishlist' })
-      .select('name slug coverCrop addedDate')
+      .select('name slug coverCrop genres releasedDate')
       .sort({ addedDate: -1 })
       .lean();
   }
@@ -145,6 +145,7 @@ class GameService {
         $gte: startOfYear,
         $lt: endOfYear,
       },
+      status: { $ne: 'wishlist' },
     })
       .select('name slug coverCrop addedDate')
       .lean();
